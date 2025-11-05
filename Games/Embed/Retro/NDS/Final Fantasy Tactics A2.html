@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Final Fantasy Tactics A2</title>
+  <base href="https://cdn.jsdelivr.net/gh/a456pur/seraph@main/storage/emulatorjs/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: monospace;
+      font-weight: bold;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #status {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    #progress {
+      width: 80%;
+      background: #333;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #bar {
+      height: 100%;
+      width: 0%;
+      background: #4caf50;
+      transition: width 0.3s;
+    }
+    #game {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Preparing to download...</div>
+  <div id="progress"><div id="bar"></div></div>
+  <div id="game"></div>
+
+  <script>
+    const partUrls = [
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Final%20Fantasy%20Tactics%20A2%20NDS/Final%20Fantasy%20Tactics%20A2%20-%20Grimoire%20of%20the%20Rift%20(USA)%20(En%2CFr%2CEs).part.001",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Final%20Fantasy%20Tactics%20A2%20NDS/Final%20Fantasy%20Tactics%20A2%20-%20Grimoire%20of%20the%20Rift%20(USA)%20(En%2CFr%2CEs).part.002",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Final%20Fantasy%20Tactics%20A2%20NDS/Final%20Fantasy%20Tactics%20A2%20-%20Grimoire%20of%20the%20Rift%20(USA)%20(En%2CFr%2CEs).part.003"
+    ];
+
+    const status = document.getElementById("status");
+    const bar = document.getElementById("bar");
+    const game = document.getElementById("game");
+
+    async function fetchAndMerge(urls) {
+      const parts = [];
+      for (let i = 0; i < urls.length; i++) {
+        status.textContent = `Fetching part ${i + 1}/${urls.length}...`;
+        const res = await fetch(urls[i]);
+        if (!res.ok) throw new Error("Failed to fetch part " + (i + 1));
+        const data = new Uint8Array(await res.arrayBuffer());
+        parts.push(data);
+        bar.style.width = (((i + 1) / urls.length) * 100) + "%";
+      }
+      const totalLength = parts.reduce((sum, p) => sum + p.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const p of parts) {
+        merged.set(p, offset);
+        offset += p.length;
+      }
+      return new Blob([merged]);
+    }
+
+    (async () => {
+      try {
+        const blob = await fetchAndMerge(partUrls);
+        const blobUrl = URL.createObjectURL(blob);
+
+        status.textContent = "Loading Emulator...";
+        bar.style.width = "100%";
+        setTimeout(() => {
+          status.style.display = "none";
+          document.querySelector("#progress").style.display = "none";
+          game.style.display = "block";
+        }, 1000);
+
+        window.EJS_player = "#game";
+        window.EJS_gameName = "Final Fantasy Tactics A2";
+        window.EJS_gameUrl = blobUrl;
+        window.EJS_core = "nds";
+        window.EJS_pathtodata = "data/";
+        window.EJS_startOnLoaded = true;
+
+        const script = document.createElement("script");
+        script.src = "data/loader.js";
+        document.body.appendChild(script);
+      } catch (e) {
+        status.textContent = "Error: " + e.message;
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
