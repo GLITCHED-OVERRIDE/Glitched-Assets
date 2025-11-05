@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LEGO Batman 2: DC Super Heroes</title>
+  <base href="https://cdn.jsdelivr.net/gh/a456pur/seraph@main/storage/emulatorjs/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: monospace;
+      font-weight: bold;
+      background: #111;
+      color: #fff;
+      overflow: hidden;
+    }
+    #error {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f33;
+      font-size: 18px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #progress {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      max-width: 500px;
+      height: 25px;
+      border: 2px solid #f00;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 0 10px #f00;
+    }
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #f00, #900);
+      transition: width 0.2s;
+    }
+    #progressText {
+      position: absolute;
+      top: calc(50% + 35px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      color: #f00;
+      text-shadow: 0 0 5px #900;
+    }
+    #game {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="error"></div>
+  <div id="progress"><div id="progressBar"></div></div>
+  <div id="progressText">Loading game files...</div>
+  <div id="game"></div>
+
+  <script>
+    const partUrls = [
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Lego%20Batman%202%20NDS/LEGO%20Batman%202%20-%20DC%20Super%20Heroes%20(USA)%20(En%2CFr%2CEs%2CPt).part.001",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Lego%20Batman%202%20NDS/LEGO%20Batman%202%20-%20DC%20Super%20Heroes%20(USA)%20(En%2CFr%2CEs%2CPt).part.002",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Lego%20Batman%202%20NDS/LEGO%20Batman%202%20-%20DC%20Super%20Heroes%20(USA)%20(En%2CFr%2CEs%2CPt).part.003",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Lego%20Batman%202%20NDS/LEGO%20Batman%202%20-%20DC%20Super%20Heroes%20(USA)%20(En%2CFr%2CEs%2CPt).part.004",
+      "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Lego%20Batman%202%20NDS/LEGO%20Batman%202%20-%20DC%20Super%20Heroes%20(USA)%20(En%2CFr%2CEs%2CPt).part.005"
+    ];
+
+    const error = document.getElementById("error");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const gameContainer = document.getElementById("game");
+
+    async function fetchAndMerge(urls) {
+      const parts = [];
+      let loaded = 0;
+      const totalParts = urls.length;
+      for (let i = 0; i < totalParts; i++) {
+        const res = await fetch(urls[i]);
+        if (!res.ok) throw new Error("Failed to fetch part " + (i + 1));
+        const data = new Uint8Array(await res.arrayBuffer());
+        parts.push(data);
+        loaded++;
+        const percent = Math.round((loaded / totalParts) * 100);
+        progressBar.style.width = percent + "%";
+        progressText.textContent = `Loading... ${percent}%`;
+      }
+
+      const totalLength = parts.reduce((sum, p) => sum + p.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const p of parts) {
+        merged.set(p, offset);
+        offset += p.length;
+      }
+      return new Blob([merged]);
+    }
+
+    (async () => {
+      try {
+        const blob = await fetchAndMerge(partUrls);
+        const blobUrl = URL.createObjectURL(blob);
+
+        window.EJS_player = "#game";
+        window.EJS_gameName = "LEGO Batman 2: DC Super Heroes";
+        window.EJS_gameUrl = blobUrl;
+        window.EJS_core = "nds";
+        window.EJS_pathtodata = "data/";
+        window.EJS_startOnLoaded = true;
+
+        progressBar.style.width = "100%";
+        progressText.textContent = "Launching game...";
+        setTimeout(() => {
+          document.getElementById("progress").style.display = "none";
+          progressText.style.display = "none";
+          gameContainer.style.display = "block";
+        }, 800);
+
+        const script = document.createElement("script");
+        script.src = "data/loader.js";
+        script.onerror = () => error.textContent = "Failed to load EmulatorJS core";
+        document.body.appendChild(script);
+      } catch (e) {
+        error.textContent = "Error: " + e.message;
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
