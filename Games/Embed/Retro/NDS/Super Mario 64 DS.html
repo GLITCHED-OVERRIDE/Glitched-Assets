@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Super Mario 64 DS</title>
+  <base href="https://cdn.jsdelivr.net/gh/a456pur/seraph@main/storage/emulatorjs/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: monospace;
+      font-weight: bold;
+      background: #111;
+      color: #fff;
+      overflow: hidden;
+    }
+    #error {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f33;
+      font-size: 18px;
+      text-align: center;
+      z-index: 1000;
+    }
+    #progressText {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      color: #f00;
+      text-shadow: 0 0 8px #900;
+    }
+    #game {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="error"></div>
+  <div id="progressText">Loading game file…</div>
+  <div id="game"></div>
+
+  <script>
+    const gameUrl = "https://raw.githubusercontent.com/GLITCHED-OVERRIDE/Glitched-Assets/main/Games/Large%20Assets/Super%20Mario%2064%20DS%20NDS/Super%20Mario%2064%20DS%20(USA)%20(Rev%201).nds";
+
+    const error = document.getElementById("error");
+    const progressText = document.getElementById("progressText");
+    const gameContainer = document.getElementById("game");
+
+    async function fetchGame(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch game file");
+      const data = await res.blob();
+      return data;
+    }
+
+    (async () => {
+      try {
+        progressText.textContent = "Fetching Super Mario 64 DS…";
+        const blob = await fetchGame(gameUrl);
+        const blobUrl = URL.createObjectURL(blob);
+
+        window.EJS_player = "#game";
+        window.EJS_gameName = "Super Mario 64 DS";
+        window.EJS_gameUrl = blobUrl;
+        window.EJS_core = "nds";
+        window.EJS_pathtodata = "data/";
+        window.EJS_startOnLoaded = true;
+
+        progressText.textContent = "Launching game…";
+        setTimeout(() => {
+          progressText.style.display = "none";
+          gameContainer.style.display = "block";
+        }, 800);
+
+        const script = document.createElement("script");
+        script.src = "data/loader.js";
+        script.onerror = () => error.textContent = "Failed to load EmulatorJS core";
+        document.body.appendChild(script);
+      } catch (e) {
+        error.textContent = "Error: " + e.message;
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
